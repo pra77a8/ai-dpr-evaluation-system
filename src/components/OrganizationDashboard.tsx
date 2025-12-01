@@ -1,0 +1,1793 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Progress } from './ui/progress';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { Sheet, SheetContent } from './ui/sheet';
+import { Badge } from './ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import {
+  Upload,
+  LogOut,
+  FileText,
+  BarChart3,
+  MessageSquare,
+  FileBarChart,
+  AlertTriangle,
+  Calendar,
+  TrendingUp,
+  User,
+  Send,
+  Bot,
+  Menu,
+  ChevronDown,
+  ChevronUp,
+  Shield,
+  DollarSign,
+  Users,
+  MapPin,
+  Leaf,
+  Eye,
+  Filter,
+  ThumbsUp,
+  ThumbsDown,
+  Heart,
+  Check,
+  Trash2
+} from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie, Cell } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Textarea } from './ui/textarea';
+import { ScrollArea } from './ui/scroll-area';
+import { toast } from 'sonner';
+// Correct import path for the API utility
+// Correct import path for the API utility
+import api from '../utils/api';
+import ChatInterface from './ChatInterface';
+
+interface OrganizationDashboardProps {
+  onLogout: () => void;
+}
+
+type TabType = 'upload' | 'analytics' | 'risk-prediction' | 'chatbot' | 'reports' | 'feedback';
+
+// Mock extracted DPR data
+interface ExtractedDPR {
+  projectTitle: string;
+  budget: string;
+  timeline: string;
+  resources: string;
+  location: string;
+  environmental: string;
+  uploadDate: string;
+}
+
+// New interface for actual DPR data from backend
+interface ActualDPR {
+  id: string;
+  file_name: string;
+  uploaded_at: string;
+  extracted_data: {
+    project_title: string;
+    // ... other extracted data fields
+  };
+  enhanced_extraction?: {
+    project_title?: string;
+    department?: string;
+    region?: string;
+    duration?: string;
+    estimated_cost?: string;
+    fund_allocation?: string;
+    yearly_budget?: string;
+    contingency?: string;
+    start_date?: string;
+    end_date?: string;
+    milestones?: string[];
+    num_employees?: number;
+    machinery?: string[];
+    raw_materials?: string[];
+    vendor_details?: string[];
+    state?: string;
+    district?: string;
+    coordinates?: string;
+    risk_zone?: string;
+    engineering_details?: string;
+    specifications?: string;
+    materials?: string[];
+    guidelines_followed?: boolean;
+    missing_documents?: string[];
+    budget?: string;
+    timeline?: string;
+    resource_allocation?: string;
+    location?: string;
+    environmental_risks?: string;
+    technical_sections?: string[];
+  };
+  reports?: {
+    analytical_report?: string;
+    recommendation_report?: string;
+  };
+  // Add missing properties that come from the backend
+  ai_risk_scores?: {
+    cost_overruns?: number;
+    schedule_delays?: number;
+    resource_shortages?: number;
+    environmental_risks?: number;
+  };
+  completeness_score?: number;
+  approved?: boolean;
+}
+
+// Mock risk data
+const riskTypesData = [
+  { risk: 'Cost Overrun', score: 80, fullMark: 100 },
+  { risk: 'Schedule Delay', score: 60, fullMark: 100 },
+  { risk: 'Resource Shortage', score: 40, fullMark: 100 },
+  { risk: 'Environmental', score: 50, fullMark: 100 },
+  { risk: 'Quality Issues', score: 35, fullMark: 100 },
+];
+
+const riskPredictionData = [
+  {
+    id: 1,
+    riskType: 'Cost Overrun',
+    severity: 80,
+    recommendation: 'Recheck budget allocation and identify potential savings',
+    section: 'Budget & Finance'
+  },
+  {
+    id: 2,
+    riskType: 'Schedule Delay',
+    severity: 60,
+    recommendation: 'Adjust timeline and add buffer periods for critical tasks',
+    section: 'Project Timeline'
+  },
+  {
+    id: 3,
+    riskType: 'Resource Shortage',
+    severity: 40,
+    recommendation: 'Add contingency plan for manpower and materials',
+    section: 'Resources & Manpower'
+  },
+  {
+    id: 4,
+    riskType: 'Flood Risk',
+    severity: 50,
+    recommendation: 'Plan for alternative route and drainage improvements',
+    section: 'Environmental Concerns'
+  },
+  {
+    id: 5,
+    riskType: 'Quality Compliance',
+    severity: 35,
+    recommendation: 'Implement stricter quality control measures',
+    section: 'Quality Assurance'
+  },
+];
+
+const completenessData = [
+  { section: 'Project Details', completeness: 95 },
+  { section: 'Budget', completeness: 78 },
+  { section: 'Timeline', completeness: 85 },
+  { section: 'Resources', completeness: 60 },
+  { section: 'Environmental', completeness: 70 },
+  { section: 'Risk Assessment', completeness: 45 },
+];
+
+const reportsData = [
+  { id: 1, project: 'Rural Road Development', date: '2025-10-01', status: 'Critical', score: 6.8 },
+  { id: 2, project: 'School Building Project', date: '2025-09-28', status: 'Low Risk', score: 3.2 },
+  { id: 3, project: 'Water Supply System', date: '2025-09-25', status: 'Medium', score: 5.5 },
+  { id: 4, project: 'Community Health Center', date: '2025-09-20', status: 'Low Risk', score: 2.8 },
+];
+
+// Feedback interface
+interface Feedback {
+  id: string;
+  dpr_id: string;
+  project_title: string;
+  civilian_id: string;
+  civilian_name: string;
+  content: string;
+  submitted_at: string;
+  likes_count: number;
+  dislikes_count: number;
+  likes: string[]; // User IDs who liked
+  dislikes: string[]; // User IDs who disliked
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export default function OrganizationDashboard({ onLogout }: OrganizationDashboardProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('upload');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [extractedDPR, setExtractedDPR] = useState<ExtractedDPR | null>(null);
+  const [actualDPRs, setActualDPRs] = useState<ActualDPR[]>([]); // New state for actual DPRs
+  const [selectedDprId, setSelectedDprId] = useState<string | null>(null); // State for selected DPR
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      role: 'assistant',
+      content: 'Hello! I\'m your AI assistant for DPR evaluation. Upload a DPR to get started, or ask me any questions about risk assessment and project evaluation.'
+    }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [riskFilter, setRiskFilter] = useState('all');
+  const [severityFilter, setSeverityFilter] = useState('all');
+  const [selectedRiskDetail, setSelectedRiskDetail] = useState<typeof riskPredictionData[0] | null>(null);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]); // New state for feedbacks
+  const [currentUser, setCurrentUser] = useState({ id: 'org_user_id', name: 'Organization User' }); // Mock current user
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'hi' | 'as'>('en'); // Language selection state
+  // Add state for translated content
+  const [translatedContent, setTranslatedContent] = useState<Record<string, string>>({});
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Add isLoading state for risk assessment
+
+  // Translation dictionary for the Extracted DPR Summary
+  const translations = {
+    en: {
+      extractedDprSummary: "Extracted DPR Summary",
+      aiExtractedKeyInfo: "AI-extracted key information",
+      projectTitle: "Project Title",
+      budgetDetails: "Budget Details",
+      timeline: "Timeline",
+      resourcesManpower: "Resources & Manpower",
+      locationRegion: "Location / Region",
+      environmentalConcerns: "Environmental Concerns",
+      viewRiskAnalytics: "View Risk Analytics",
+      askAiAboutThisDpr: "Ask AI About This DPR"
+    },
+    hi: {
+      extractedDprSummary: "निकाला गया डीपीआर सारांश",
+      aiExtractedKeyInfo: "AI-द्वारा निकाली गई प्रमुख जानकारी",
+      projectTitle: "परियोजना का शीर्षक",
+      budgetDetails: "बजट विवरण",
+      timeline: "समय सारिणी",
+      resourcesManpower: "संसाधन और मानव संसाधन",
+      locationRegion: "स्थान / क्षेत्र",
+      environmentalConcerns: "पर्यावरण संबंधी चिंताएं",
+      viewRiskAnalytics: "जोखिम विश्लेषण देखें",
+      askAiAboutThisDpr: "इस डीपीआर के बारे में एआई से पूछें"
+    },
+    as: {
+      extractedDprSummary: "নিৰ্যাত ডিপিআৰ সাৰাংশ",
+      aiExtractedKeyInfo: "AI-এ নিৰ্যাত মূখ্য তথ্য",
+      projectTitle: "প্ৰকল্প শীৰ্ষক",
+      budgetDetails: "বাজেট বিৱৰণ",
+      timeline: "সময়সূচী",
+      resourcesManpower: "সম্পদ আৰু মানৱ সম্পদ",
+      locationRegion: "অৱস্থান / অঞ্চল",
+      environmentalConcerns: "পৰিৱেশগত চিন্তা",
+      viewRiskAnalytics: "বিপদ বিশ্লেষণ চাওক",
+      askAiAboutThisDpr: "এই ডিপিআৰৰ বিষয়ে কৃত্রিম বুদ্ধিমত্তাৰ পৰা সোধক"
+    }
+  };
+
+  // Function to get translated text based on selected language
+  const t = (key: keyof typeof translations.en) => {
+    return translations[selectedLanguage][key] || translations.en[key];
+  };
+
+  // Function to generate risk types data from actual DPRs
+  const generateRiskTypesData = (dprs: ActualDPR[]) => {
+    console.log('Generating risk types data for DPRs:', dprs);
+
+    if (!dprs || dprs.length === 0) {
+      console.log('No DPRs found, using mock data');
+      return [
+        { risk: 'Cost Overrun', score: 80, fullMark: 100 },
+        { risk: 'Schedule Delay', score: 60, fullMark: 100 },
+        { risk: 'Resource Shortage', score: 40, fullMark: 100 },
+        { risk: 'Environmental', score: 50, fullMark: 100 },
+        { risk: 'Quality Issues', score: 35, fullMark: 100 },
+      ];
+    }
+
+    // Use real data from the first DPR's AI risk scores if available
+    const firstDpr = dprs[0];
+    console.log('First DPR:', firstDpr);
+
+    if (firstDpr && firstDpr.ai_risk_scores) {
+      const riskScores = firstDpr.ai_risk_scores;
+      console.log('Using real risk scores:', riskScores);
+
+      const result = [
+        { risk: 'Cost Overrun', score: Math.round(riskScores.cost_overruns || 0), fullMark: 100 },
+        { risk: 'Schedule Delay', score: Math.round(riskScores.schedule_delays || 0), fullMark: 100 },
+        { risk: 'Resource Shortage', score: Math.round(riskScores.resource_shortages || 0), fullMark: 100 },
+        { risk: 'Environmental', score: Math.round(riskScores.environmental_risks || 0), fullMark: 100 },
+        { risk: 'Quality Issues', score: Math.round((riskScores.cost_overruns || 0) * 0.7 + (riskScores.schedule_delays || 0) * 0.3), fullMark: 100 },
+      ];
+
+      console.log('Generated risk data:', result);
+      return result;
+    }
+
+    console.log('No risk scores found, using fallback mock data');
+    // Fallback to mock data with some variation based on number of DPRs
+    const baseScore = Math.min(90, 50 + dprs.length * 5);
+    return [
+      { risk: 'Cost Overrun', score: baseScore, fullMark: 100 },
+      { risk: 'Schedule Delay', score: Math.max(20, baseScore - 15), fullMark: 100 },
+      { risk: 'Resource Shortage', score: Math.max(10, baseScore - 25), fullMark: 100 },
+      { risk: 'Environmental', score: Math.max(5, baseScore - 30), fullMark: 100 },
+      { risk: 'Quality Issues', score: Math.max(15, baseScore - 20), fullMark: 100 },
+    ];
+  };
+
+  // Function to generate completeness data from actual DPRs
+  const generateCompletenessData = (dprs: ActualDPR[]) => {
+    console.log('Generating completeness data for DPRs:', dprs);
+
+    if (!dprs || dprs.length === 0) {
+      console.log('No DPRs found, using mock data');
+      return [
+        { section: 'Project Details', completeness: 95 },
+        { section: 'Budget', completeness: 78 },
+        { section: 'Timeline', completeness: 85 },
+        { section: 'Resources', completeness: 60 },
+        { section: 'Environmental', completeness: 70 },
+        { section: 'Risk Assessment', completeness: 45 },
+      ];
+    }
+
+    // Use real data from the first DPR's completeness score if available
+    const firstDpr = dprs[0];
+    console.log('First DPR for completeness:', firstDpr);
+
+    if (firstDpr && firstDpr.completeness_score !== undefined) {
+      const score = firstDpr.completeness_score;
+      console.log('Using real completeness score:', score);
+
+      const result = [
+        { section: 'Project Details', completeness: Math.min(100, Math.max(0, score + 10)) },
+        { section: 'Budget', completeness: Math.min(100, Math.max(0, score + 5)) },
+        { section: 'Timeline', completeness: Math.min(100, Math.max(0, score)) },
+        { section: 'Resources', completeness: Math.min(100, Math.max(0, score - 5)) },
+        { section: 'Environmental', completeness: Math.min(100, Math.max(0, score - 10)) },
+        { section: 'Risk Assessment', completeness: Math.min(100, Math.max(0, score - 15)) },
+      ];
+
+      console.log('Generated completeness data:', result);
+      return result;
+    }
+
+    console.log('No completeness score found, using fallback mock data');
+    // Fallback to mock data with some variation based on number of DPRs
+    const baseCompleteness = Math.min(100, 50 + dprs.length * 3);
+    return [
+      { section: 'Project Details', completeness: Math.min(100, baseCompleteness + 10) },
+      { section: 'Budget', completeness: Math.min(100, baseCompleteness + 5) },
+      { section: 'Timeline', completeness: Math.min(100, baseCompleteness) },
+      { section: 'Resources', completeness: Math.min(100, baseCompleteness - 5) },
+      { section: 'Environmental', completeness: Math.min(100, baseCompleteness - 10) },
+      { section: 'Risk Assessment', completeness: Math.min(100, baseCompleteness - 15) },
+    ];
+  };
+
+  // Fetch actual DPRs when component mounts or when reports tab is active
+  useEffect(() => {
+    console.log('useEffect triggered, activeTab:', activeTab);
+    if (activeTab === 'reports' || activeTab === 'analytics' || activeTab === 'risk-prediction') {
+      console.log('Fetching actual DPRs because tab is:', activeTab);
+      fetchActualDPRs().then((dprs: ActualDPR[]) => {
+        // Automatically assess risks for DPRs that don't have AI risk scores
+        if (activeTab === 'risk-prediction' && dprs && Array.isArray(dprs)) {
+          dprs.forEach(async (dpr) => {
+            if (!dpr.ai_risk_scores) {
+              console.log('DPR missing risk scores, assessing risk with AI:', dpr.id);
+              try {
+                await assessRiskWithAI(dpr.id);
+                // Refresh the DPR data after assessment
+                await fetchActualDPRs();
+              } catch (error) {
+                console.error('Failed to assess risk for DPR:', dpr.id, error);
+              }
+            }
+          });
+        }
+      });
+    }
+  }, [activeTab]);
+
+  // Update selected DPR when DPR list changes
+  useEffect(() => {
+    if (actualDPRs.length > 0 && !selectedDprId) {
+      // If no DPR is selected yet, select the first one
+      setSelectedDprId(actualDPRs[0].id);
+    } else if (selectedDprId && !actualDPRs.some(dpr => dpr.id === selectedDprId)) {
+      // If the selected DPR is no longer in the list, select the first one
+      setSelectedDprId(actualDPRs[0].id);
+    }
+  }, [actualDPRs, selectedDprId]);
+
+  // Fetch feedbacks when feedback tab is active
+  useEffect(() => {
+    if (activeTab === 'feedback') {
+      fetchAllFeedbacks();
+    }
+  }, [activeTab]);
+
+  // Function to fetch actual DPRs
+  const fetchActualDPRs = async () => {
+    try {
+      console.log('Fetching actual DPRs from backend...');
+      // Fetch from the organization dashboard endpoint instead of user-specific endpoint
+      const response = await fetch(api.getOrganizationDPRs);
+      console.log('Fetch response status:', response.status);
+
+      if (response.ok) {
+        const dprs = await response.json();
+        console.log('Fetched DPRs:', dprs);
+        setActualDPRs(dprs);
+
+        // If we don't have a selected DPR yet, or if the selected DPR is not in the new list,
+        // select the first DPR in the list
+        if (dprs.length > 0 && (!selectedDprId || !dprs.some((dpr: ActualDPR) => dpr.id === selectedDprId))) {
+          setSelectedDprId(dprs[0].id);
+        }
+
+        return dprs;
+      } else {
+        console.error('Failed to fetch DPRs, status:', response.status);
+        // Fallback to sample data if fetch fails
+        const sampleData = [
+          {
+            id: '68e37c14f42881a132dcc54c',
+            file_name: 'Model_DPR_Final 2.0.pdf',
+            uploaded_at: '2025-10-01T10:30:00Z',
+            extracted_data: {
+              project_title: 'Roll-Out of National e-Vidhan Application(NeVA)'
+            },
+            ai_risk_scores: {
+              cost_overruns: 75,
+              schedule_delays: 60,
+              resource_shortages: 45,
+              environmental_risks: 30
+            },
+            completeness_score: 85
+          },
+          {
+            id: '68e37c00f42881a132dcc54a',
+            file_name: 'Sample_Project_Report.pdf',
+            uploaded_at: '2025-09-28T14:15:00Z',
+            extracted_data: {
+              project_title: 'Rural Road Development Project'
+            },
+            ai_risk_scores: {
+              cost_overruns: 40,
+              schedule_delays: 55,
+              resource_shortages: 35,
+              environmental_risks: 25
+            },
+            completeness_score: 70
+          }
+        ];
+        setActualDPRs(sampleData);
+        if (sampleData.length > 0 && !selectedDprId) {
+          setSelectedDprId(sampleData[0].id);
+        }
+        return sampleData;
+      }
+    } catch (error) {
+      console.error('Error fetching DPRs:', error);
+      // Fallback to sample data if fetch fails
+      const sampleData = [
+        {
+          id: '68e37c14f42881a132dcc54c',
+          file_name: 'Model_DPR_Final 2.0.pdf',
+          uploaded_at: '2025-10-01T10:30:00Z',
+          extracted_data: {
+            project_title: 'Roll-Out of National e-Vidhan Application(NeVA)'
+          },
+          ai_risk_scores: {
+            cost_overruns: 75,
+            schedule_delays: 60,
+            resource_shortages: 45,
+            environmental_risks: 30
+          },
+          completeness_score: 85
+        },
+        {
+          id: '68e37c00f42881a132dcc54a',
+          file_name: 'Sample_Project_Report.pdf',
+          uploaded_at: '2025-09-28T14:15:00Z',
+          extracted_data: {
+            project_title: 'Rural Road Development Project'
+          },
+          ai_risk_scores: {
+            cost_overruns: 40,
+            schedule_delays: 55,
+            resource_shortages: 35,
+            environmental_risks: 25
+          },
+          completeness_score: 70
+        }
+      ];
+      setActualDPRs(sampleData);
+      if (sampleData.length > 0 && !selectedDprId) {
+        setSelectedDprId(sampleData[0].id);
+      }
+      return sampleData;
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      console.log('File selected:', e.target.files[0]);
+      setUploadedFile(e.target.files[0]);
+      setUploadProgress(0);
+    } else {
+      console.log('No file selected');
+    }
+  };
+
+  const handleChatFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      console.log('File selected:', e.target.files[0]);
+      setUploadedFile(e.target.files[0]);
+      setUploadProgress(0);
+
+      // Add user message indicating file upload to chat
+      const userMessage = {
+        role: 'user' as const,
+        content: `Uploaded file: ${e.target.files[0].name}`
+      };
+      setChatMessages(prev => [...prev, userMessage]);
+
+      // Show processing message in chat
+      const processingMessage = {
+        role: 'assistant' as const,
+        content: `Processing your PDF file: ${e.target.files[0].name}. Please wait while I analyze the content...`
+      };
+      setChatMessages(prev => [...prev, processingMessage]);
+
+      // Wait for the analysis to complete
+      try {
+        await handleAnalyze();
+
+        // After analysis, fetch updated DPRs
+        await fetchActualDPRs();
+
+        // Select the most recently uploaded DPR (first in the list)
+        if (actualDPRs.length > 0) {
+          setSelectedDprId(actualDPRs[0].id);
+
+          // Add success message to chat with confirmation of selection
+          const successMessage = {
+            role: 'assistant' as const,
+            content: `I've successfully processed your PDF file "${e.target.files[0].name}" and selected it for analysis. You can now ask me specific questions about this DPR.`
+          };
+          setChatMessages(prev => [...prev, successMessage]);
+        } else {
+          const successMessage = {
+            role: 'assistant' as const,
+            content: `I've successfully processed your PDF file "${e.target.files[0].name}". Please select a DPR from the dropdown to ask specific questions.`
+          };
+          setChatMessages(prev => [...prev, successMessage]);
+        }
+      } catch (error) {
+        console.error('Error in chat file upload:', error);
+        const errorMessage = {
+          role: 'assistant' as const,
+          content: `I encountered an error while analyzing the file: ${(error as Error).message || 'Unknown error'}. Please try uploading again.`
+        };
+        setChatMessages(prev => [...prev, errorMessage]);
+      }
+    } else {
+      console.log('No file selected');
+    }
+  };
+
+  const handleAnalyze = async () => {
+    console.log('handleAnalyze called');
+    console.log('Uploaded file:', uploadedFile);
+
+    if (!uploadedFile) {
+      alert('Please select a file first');
+      return;
+    }
+
+    // Backend endpoint: POST /api/dpr/upload_with_ai
+    // FormData: { file: uploadedFile }
+    console.log('Analyzing DPR with AI:', uploadedFile.name);
+
+    try {
+      // Reset progress
+      setUploadProgress(0);
+
+      // Create a new File object to ensure we have fresh data
+      const fileToSend = new File([uploadedFile], uploadedFile.name, { type: uploadedFile.type });
+
+      const formData = new FormData();
+      formData.append('file', fileToSend);
+      formData.append('uploaded_by', 'current_user_id'); // This should be replaced with actual user ID
+      formData.append('generate_reports', 'true');
+
+      // Show progress simulation with more realistic behavior
+      let progress = 0;
+      const interval = setInterval(() => {
+        if (progress < 30) {
+          // Fast initial progress (file upload)
+          progress += 5;
+        } else if (progress < 70) {
+          // Slower progress (processing)
+          progress += 2;
+        } else if (progress < 95) {
+          // Very slow progress (AI analysis)
+          progress += 1;
+        }
+        setUploadProgress(progress);
+        console.log('Upload progress:', progress);
+      }, 600);
+
+      // Log the request details for debugging
+      console.log('Sending request to /api/dpr/upload_with_ai with formData:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+
+      // Call the backend API with a timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
+
+      const response = await fetch(api.uploadDPRWithAI, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal
+      });
+
+      // Clear the timeout
+      clearTimeout(timeoutId);
+
+      // Clear the progress interval
+      clearInterval(interval);
+
+      // Set progress to 100% when we get a response
+      setUploadProgress(100);
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Upload result:', result);
+
+        // Assess risks with AI automatically
+        try {
+          await assessRiskWithAI(result.dpr.id);
+        } catch (error) {
+          console.error('Failed to assess risk after upload:', error);
+        }
+
+        // Extract data from the response
+        const extractedData = result.dpr.extracted_data;
+        setExtractedDPR({
+          projectTitle: extractedData.project_title || 'Unknown Project',
+          budget: extractedData.budget || 'Not specified',
+          timeline: extractedData.timeline || 'Not specified',
+          resources: extractedData.resource_allocation || 'Not specified',
+          location: extractedData.location || 'Not specified',
+          environmental: extractedData.environmental_risks || 'Not specified',
+          uploadDate: new Date().toLocaleDateString()
+        });
+
+        // Refresh the DPR list to include the newly uploaded DPR
+        if (activeTab === 'reports' || activeTab === 'analytics' || activeTab === 'risk-prediction') {
+          await fetchActualDPRs();
+        } else {
+          // If we're not on a tab that automatically fetches DPRs, fetch them anyway
+          await fetchActualDPRs();
+        }
+
+        // Add a small delay to ensure UI updates before showing alert
+        setTimeout(() => {
+          setUploadProgress(0); // Reset progress after completion
+          // Show success message
+          alert('Analysis complete! Check the extracted DPR summary, Analytics, and Risk Prediction tabs.');
+        }, 500);
+      } else {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        setUploadProgress(0); // Reset progress on error
+        try {
+          const error = JSON.parse(errorText);
+          alert(`Error: ${error.detail || 'Failed to process the file'}`);
+        } catch {
+          alert(`Error: Failed to process the file. Server responded with status ${response.status}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Network error:', error);
+      // Make sure to clear any progress intervals
+      setUploadProgress(0);
+      if (error.name === 'AbortError') {
+        alert('Request timed out. The file might be too large or the processing took too long. Please try a smaller file or wait a bit longer before retrying.');
+      } else {
+        alert(`Network error: ${error.message || 'Failed to connect to server. Please make sure the backend is running.'}`);
+      }
+    }
+  };
+
+  const getSeverityColor = (severity: number) => {
+    if (severity >= 70) return { bg: 'bg-red-100', text: 'text-red-700', label: 'High' };
+    if (severity >= 40) return { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Medium' };
+    return { bg: 'bg-green-100', text: 'text-green-700', label: 'Low' };
+  };
+
+  const getCompletenessColor = (completeness: number) => {
+    if (completeness >= 80) return '#10b981'; // green
+    if (completeness >= 50) return '#f59e0b'; // amber
+    return '#ef4444'; // red
+  };
+
+  // Add the missing fetchAllFeedbacks function
+  const fetchAllFeedbacks = async () => {
+    try {
+      const response = await fetch(api.getAllFeedback);
+      if (response.ok) {
+        const feedbackData = await response.json();
+        setFeedbacks(feedbackData);
+      }
+    } catch (error) {
+      console.error('Error fetching feedbacks:', error);
+    }
+  };
+
+  // Add the missing handleLikeFeedback function
+  const handleLikeFeedback = async (feedbackId: string) => {
+    try {
+      const response = await fetch(api.likeFeedback(feedbackId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: currentUser.id }),
+      });
+
+      if (response.ok) {
+        const updatedFeedback = await response.json();
+        // Update the feedback in the state
+        setFeedbacks(prev => prev.map(fb => fb.id === feedbackId ? updatedFeedback : fb));
+      }
+    } catch (error) {
+      console.error('Error liking feedback:', error);
+    }
+  };
+
+  // Add the missing handleDislikeFeedback function
+  const handleDislikeFeedback = async (feedbackId: string) => {
+    try {
+      const response = await fetch(api.dislikeFeedback(feedbackId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: currentUser.id }),
+      });
+
+      if (response.ok) {
+        const updatedFeedback = await response.json();
+        // Update the feedback in the state
+        setFeedbacks(prev => prev.map(fb => fb.id === feedbackId ? updatedFeedback : fb));
+      }
+    } catch (error) {
+      console.error('Error disliking feedback:', error);
+    }
+  };
+
+  // Function to generate reports on demand
+  const generateReport = async (dprId: string, reportType: 'analytical' | 'recommendation') => {
+    try {
+      const response = await fetch(api.generateReport, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dpr_id: dprId,
+          report_type: reportType
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh DPRs to get updated report information
+        await fetchActualDPRs();
+        // Open the generated report
+        window.open(api.downloadReport(data.report_path), '_blank');
+      } else {
+        const error = await response.json();
+        alert(`Error generating report: ${error.detail || 'Failed to generate report'}`);
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Network error: Failed to generate report');
+    }
+  };
+
+  // Add missing handleSendMessage function for the chatbot
+  const handleSendMessage = async () => {
+    if (!chatInput.trim()) return;
+
+    // Add user message to chat
+    const userMessage = {
+      role: 'user' as const,
+      content: chatInput
+    };
+    setChatMessages(prev => [...prev, userMessage]);
+    const currentInput = chatInput;
+    setChatInput('');
+
+    try {
+      // If we have a selected DPR, use the AI chat service
+      if (selectedDprId) {
+        const response = await fetch(api.aiChat, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            question: currentInput,
+            dpr_id: selectedDprId
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const aiResponse = {
+            role: 'assistant' as const,
+            content: data.answer
+          };
+          setChatMessages(prev => [...prev, aiResponse]);
+        } else {
+          throw new Error('Failed to get AI response');
+        }
+      } else {
+        // Fallback to simulated response if no DPR is selected
+        setTimeout(() => {
+          const aiResponse = {
+            role: 'assistant' as const,
+            content: `I understand you're asking about "${currentInput}". As an AI assistant for DPR evaluation, I can help you analyze project risks, budget concerns, timeline issues, and other aspects of your DPR. Please select a DPR from the dropdown to get specific insights.`
+          };
+          setChatMessages(prev => [...prev, aiResponse]);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: 'Sorry, I encountered an error processing your request. Please try again.'
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
+  // Add function to clear chat history
+  const clearChatHistory = () => {
+    setChatMessages([
+      {
+        role: 'assistant' as const,
+        content: 'Hello! I\'m your AI assistant for DPR evaluation. Upload a DPR to get started, or ask me any questions about risk assessment and project evaluation.'
+      }
+    ]);
+  };
+
+  // Add function to export chat history
+  const exportChatHistory = () => {
+    const chatText = chatMessages.map(msg =>
+      `${msg.role === 'user' ? 'You' : 'AI Assistant'}: ${msg.content}`
+    ).join('\n\n');
+
+    const blob = new Blob([chatText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dpr-chat-history-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Function to assess risks with AI
+  const assessRiskWithAI = async (dprId: string) => {
+    try {
+      const response = await fetch(api.assessRiskWithAI(dprId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Risk assessment result:', result);
+        // Refresh the DPR data to get updated risk scores
+        await fetchActualDPRs();
+        return result;
+      } else {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to assess risk');
+      }
+    } catch (error) {
+      console.error('Error assessing risk with AI:', error);
+      throw error;
+    }
+  };
+
+  // Function to translate content using backend endpoint
+  const translateContent = async (content: string, targetLang: string): Promise<string> => {
+    try {
+      // For English, return original content
+      if (targetLang === 'en') {
+        return content;
+      }
+
+      // Call backend translation endpoint
+      const response = await fetch(api.aiTranslate, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: content,
+          target_lang: targetLang
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.translated_text;
+      } else {
+        throw new Error('Translation failed');
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+      return content; // Return original content if translation fails
+    }
+  };
+
+  // Function to translate all DPR content
+  const translateDPRContent = async (dpr: ActualDPR | null, lang: 'en' | 'hi' | 'as') => {
+    if (!dpr || lang === 'en') {
+      setTranslatedContent({});
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const contentToTranslate: Record<string, string> = {};
+
+      // Extract content from DPR
+      if (dpr.extracted_data) {
+        contentToTranslate.projectTitle = dpr.extracted_data.project_title || '';
+        // Add other fields as needed
+      }
+
+      if (dpr.enhanced_extraction) {
+        contentToTranslate.budget = dpr.enhanced_extraction?.estimated_cost || dpr.enhanced_extraction?.budget || '';
+        contentToTranslate.timeline = dpr.enhanced_extraction?.duration || dpr.enhanced_extraction?.timeline || '';
+        contentToTranslate.resources = dpr.enhanced_extraction?.num_employees?.toString() || dpr.enhanced_extraction?.resource_allocation || '';
+        contentToTranslate.location = dpr.enhanced_extraction?.state || dpr.enhanced_extraction?.district || dpr.enhanced_extraction?.location || '';
+        contentToTranslate.environmental = dpr.enhanced_extraction?.environmental_risks || dpr.enhanced_extraction?.risk_zone || '';
+      }
+
+      // Translate each piece of content
+      const translated: Record<string, string> = {};
+      for (const [key, value] of Object.entries(contentToTranslate)) {
+        if (value) {
+          translated[key] = await translateContent(value, lang);
+        }
+      }
+
+      setTranslatedContent(translated);
+    } catch (error) {
+      console.error('Error translating DPR content:', error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  // Effect to translate content when language or selected DPR changes
+  useEffect(() => {
+    const selectedDpr = selectedDprId
+      ? actualDPRs.find(dpr => dpr.id === selectedDprId)
+      : actualDPRs[0];
+
+    if (selectedDpr) {
+      translateDPRContent(selectedDpr, selectedLanguage);
+    }
+  }, [selectedLanguage, selectedDprId, actualDPRs]);
+
+  // Menu items for sidebar navigation
+  const menuItems = [
+    { id: 'upload' as TabType, icon: Upload, label: 'Upload DPR' },
+    { id: 'analytics' as TabType, icon: BarChart3, label: 'Analytics' },
+    { id: 'risk-prediction' as TabType, icon: AlertTriangle, label: 'Risk Prediction' },
+    { id: 'reports' as TabType, icon: FileBarChart, label: 'Reports' },
+    { id: 'feedback' as TabType, icon: MessageSquare, label: 'Feedback' },
+    { id: 'chatbot' as TabType, icon: Bot, label: 'Chatbot' },
+  ];
+
+  // Sidebar content component
+  const SidebarContent = () => (
+    <>
+      <div className="p-4 border-b border-blue-400">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-white rounded-full">
+            <User className="h-6 w-6 text-[#004D99]" />
+          </div>
+          <div>
+            <p className="font-semibold text-white">Organization</p>
+            <p className="text-sm text-blue-200">Admin Panel</p>
+          </div>
+        </div>
+        <p className="text-xs text-blue-200 mb-2">Powered by AI</p>
+      </div>
+
+      <nav className="flex-1 p-4">
+        <div className="space-y-2">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === item.id
+                  ? 'bg-[#E3B23C] text-[#004D99] shadow-lg font-semibold'
+                  : 'text-white hover:bg-[#003d7a]'
+                }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      <div className="p-4 border-t border-blue-400">
+        <p className="text-xs text-blue-200">AI-Powered DPR Analysis</p>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Sidebar for desktop */}
+      <div className="hidden md:block w-64 bg-[#004D99] text-white shadow-lg">
+        <SidebarContent />
+      </div>
+
+      {/* Mobile sidebar */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-64 p-0 bg-[#004D99] text-white">
+          <SidebarContent />
+        </SheetContent>
+      </Sheet>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Menu
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              />
+              <h1 className="text-2xl font-semibold">DPR System</h1>
+            </div>
+            <Button
+              variant="outline"
+              onClick={onLogout}
+              className="border-[#004D99] text-[#004D99] hover:bg-blue-50"
+              size="sm"
+            >
+              <LogOut className="mr-0 sm:mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <main className="flex-1 overflow-auto p-4 sm:p-6">
+          {/* Upload DPR Tab */}
+          {activeTab === 'upload' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              <Card className="shadow-lg border-0">
+                <CardHeader className="bg-gradient-to-r from-[#004D99] to-[#003d7a] text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Upload DPR for AI Analysis
+                  </CardTitle>
+                  <CardDescription className="text-blue-100">
+                    Upload PDF, DOCX, or scanned images for comprehensive evaluation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-[#004D99] rounded-xl p-6 sm:p-12 text-center bg-blue-50/50 hover:bg-blue-50 transition-colors">
+                      <input
+                        type="file"
+                        id="dpr-upload"
+                        name="dpr-file"
+                        accept=".pdf,.docx,.doc,.png,.jpg,.jpeg"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="dpr-upload"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <div className="p-4 bg-[#004D99] rounded-full mb-4">
+                          <Upload className="h-8 w-8 text-white" />
+                        </div>
+                        <p className="text-lg text-slate-700 mb-2">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          PDF, DOCX, or Image files (Max 10MB)
+                        </p>
+                      </label>
+                    </div>
+
+                    {uploadedFile && (
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-white rounded-lg border-2 border-[#004D99]">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded">
+                              <FileText className="h-5 w-5 text-[#004D99]" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-700 text-sm sm:text-base truncate max-w-[200px] sm:max-w-none">{uploadedFile.name}</p>
+                              <p className="text-sm text-slate-500">
+                                {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={handleAnalyze}
+                            className="bg-[#004D99] hover:bg-[#003d7a] text-white w-full sm:w-auto"
+                            disabled={uploadProgress > 0 && uploadProgress < 100}
+                          >
+                            {uploadProgress > 0 && uploadProgress < 100 ? 'Processing...' : 'Upload and Analyze'}
+                          </Button>
+                        </div>
+
+                        {uploadProgress > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-600">Extracting DPR data...</span>
+                              <span className="text-[#004D99]">{uploadProgress}%</span>
+                            </div>
+                            <Progress value={uploadProgress} className="h-2" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Extracted DPR Summary */}
+              {extractedDPR && (
+                <Card className="shadow-lg border-2 border-[#E3B23C]">
+                  <CardHeader className="bg-gradient-to-r from-[#E3B23C] to-[#d4a235]">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <CardTitle className="text-[#004D99] flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          {t('extractedDprSummary')}
+                        </CardTitle>
+                        <CardDescription className="text-slate-700">
+                          {t('aiExtractedKeyInfo')} • Uploaded on {extractedDPR.uploadDate}
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-700">Language:</span>
+                        <select
+                          value={selectedLanguage}
+                          onChange={(e) => setSelectedLanguage(e.target.value as 'en' | 'hi' | 'as')}
+                          className="border border-slate-300 rounded px-2 py-1 text-sm"
+                        >
+                          <option value="en">English</option>
+                          <option value="hi">Hindi</option>
+                          <option value="as">Assamese</option>
+                        </select>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3">
+                          <FileText className="h-5 w-5 text-[#004D99] mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-500">{t('projectTitle')}</p>
+                            <p className="font-medium text-slate-800">
+                              {isTranslating ? 'Translating...' : (translatedContent.projectTitle || extractedDPR.projectTitle)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3">
+                          <DollarSign className="h-5 w-5 text-green-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-500">{t('budgetDetails')}</p>
+                            <p className="font-medium text-slate-800">
+                              {isTranslating ? 'Translating...' : (translatedContent.budget || extractedDPR.budget)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3">
+                          <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-500">{t('timeline')}</p>
+                            <p className="font-medium text-slate-800">
+                              {isTranslating ? 'Translating...' : (translatedContent.timeline || extractedDPR.timeline)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3">
+                          <Users className="h-5 w-5 text-purple-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-500">{t('resourcesManpower')}</p>
+                            <p className="font-medium text-slate-800">
+                              {isTranslating ? 'Translating...' : (translatedContent.resources || extractedDPR.resources)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3">
+                          <MapPin className="h-5 w-5 text-red-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-500">{t('locationRegion')}</p>
+                            <p className="font-medium text-slate-800">
+                              {isTranslating ? 'Translating...' : (translatedContent.location || extractedDPR.location)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-3">
+                          <Leaf className="h-5 w-5 text-green-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-500">{t('environmentalConcerns')}</p>
+                            <p className="font-medium text-slate-800">
+                              {isTranslating ? 'Translating...' : (translatedContent.environmental || extractedDPR.environmental)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row gap-3">
+                      <Button
+                        onClick={() => setActiveTab('analytics')}
+                        className="bg-[#004D99] hover:bg-[#003d7a] text-white flex-1"
+                      >
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        {t('viewRiskAnalytics')}
+                      </Button>
+                      <Button
+                        onClick={() => setActiveTab('chatbot')}
+                        variant="outline"
+                        className="border-[#004D99] text-[#004D99] hover:bg-blue-50 flex-1"
+                      >
+                        <Bot className="mr-2 h-4 w-4" />
+                        {t('askAiAboutThisDpr')}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="max-w-6xl mx-auto space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-800">DPR Analytics Dashboard</h2>
+                  <p className="text-slate-600">Comprehensive analysis of your Development Project Reports</p>
+                </div>
+                <Select
+                  value={selectedDprId || ''}
+                  onValueChange={(value) => setSelectedDprId(value)}
+                >
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue placeholder="Select DPR" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {actualDPRs.map(dpr => (
+                      <SelectItem key={dpr.id} value={dpr.id}>
+                        {dpr.file_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedDprId && (
+                <>
+                  {/* Risk Assessment Overview */}
+                  <Card className="shadow-lg border-0">
+                    <CardHeader className="bg-gradient-to-r from-[#004D99] to-[#003d7a] text-white rounded-t-lg">
+                      <CardTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5" />
+                        Risk Assessment Overview
+                      </CardTitle>
+                      <CardDescription className="text-blue-100">
+                        AI-powered risk analysis for your selected DPR
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Risk Types Chart */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-slate-800">Risk Categories</h3>
+                          <ResponsiveContainer width="100%" height={300}>
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={generateRiskTypesData(actualDPRs)}>
+                              <PolarGrid />
+                              <PolarAngleAxis dataKey="risk" />
+                              <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                              <Radar
+                                name="Risk Score"
+                                dataKey="score"
+                                stroke="#004D99"
+                                fill="#004D99"
+                                fillOpacity={0.6}
+                              />
+                              <Tooltip />
+                            </RadarChart>
+                          </ResponsiveContainer>
+                        </div>
+
+                        {/* Risk Details */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-slate-800">Risk Details</h3>
+                          <div className="space-y-3">
+                            {riskPredictionData.map(risk => (
+                              <div
+                                key={risk.id}
+                                className="p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
+                                onClick={() => setSelectedRiskDetail(risk)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-slate-800">{risk.riskType}</p>
+                                    <p className="text-sm text-slate-500">{risk.section}</p>
+                                  </div>
+                                  <Badge
+                                    className={
+                                      risk.severity >= 70 ? 'bg-red-100 text-red-700' :
+                                        risk.severity >= 40 ? 'bg-amber-100 text-amber-700' :
+                                          'bg-green-100 text-green-700'
+                                    }
+                                  >
+                                    {risk.severity}%
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-slate-600 mt-2 line-clamp-2">{risk.recommendation}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Detailed Risk Analysis */}
+                  {selectedRiskDetail && (
+                    <Card className="shadow-lg border-0">
+                      <CardHeader className="bg-gradient-to-r from-[#E3B23C] to-[#d4a235]">
+                        <CardTitle className="text-[#004D99] flex items-center gap-2">
+                          <Eye className="h-5 w-5" />
+                          Detailed Risk Analysis: {selectedRiskDetail.riskType}
+                        </CardTitle>
+                        <CardDescription className="text-slate-700">
+                          In-depth analysis and recommendations
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div className="flex flex-col gap-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 bg-[#E3B23C] rounded-lg">
+                                <Shield className="h-4 w-4 text-[#004D99]" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-slate-500">Severity</p>
+                                <p className="font-medium text-slate-800">{selectedRiskDetail.severity}%</p>
+                              </div>
+                            </div>
+                            <Progress value={selectedRiskDetail.severity} className="h-2" />
+                          </div>
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 bg-[#E3B23C] rounded-lg">
+                                <FileText className="h-4 w-4 text-[#004D99]" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-slate-500">Section</p>
+                                <p className="font-medium text-slate-800">{selectedRiskDetail.section}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 bg-[#E3B23C] rounded-lg">
+                                <MessageSquare className="h-4 w-4 text-[#004D99]" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-slate-500">Recommendation</p>
+                                <p className="font-medium text-slate-800">{selectedRiskDetail.recommendation}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Completeness Score */}
+                  <Card className="shadow-lg border-0">
+                    <CardHeader className="bg-gradient-to-r from-[#004D99] to-[#003d7a] text-white rounded-t-lg">
+                      <CardTitle className="flex items-center gap-2">
+                        <Check className="h-5 w-5" />
+                        Document Completeness
+                      </CardTitle>
+                      <CardDescription className="text-blue-100">
+                        Analysis of required sections in your DPR
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-slate-800">Overall Completeness</h3>
+                          <Badge
+                            className={
+                              (actualDPRs.find(dpr => dpr.id === selectedDprId)?.completeness_score || 0) >= 80 ?
+                                'bg-green-100 text-green-700' :
+                                (actualDPRs.find(dpr => dpr.id === selectedDprId)?.completeness_score || 0) >= 50 ?
+                                  'bg-amber-100 text-amber-700' :
+                                  'bg-red-100 text-red-700'
+                            }
+                          >
+                            {(actualDPRs.find(dpr => dpr.id === selectedDprId)?.completeness_score || 0)}%
+                          </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {generateCompletenessData(actualDPRs).map((item, index) => (
+                            <div key={index} className="p-4 border border-slate-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-medium text-slate-700">{item.section}</p>
+                                <span
+                                  className="text-sm font-medium"
+                                  style={{ color: getCompletenessColor(item.completeness) }}
+                                >
+                                  {item.completeness}%
+                                </span>
+                              </div>
+                              <Progress
+                                value={item.completeness}
+                                className="h-2"
+                                style={{
+                                  '--tw-progress-bar-color': getCompletenessColor(item.completeness)
+                                } as React.CSSProperties}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Risk Prediction Tab */}
+          {activeTab === 'risk-prediction' && (
+            <div className="max-w-6xl mx-auto space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-800">AI Risk Prediction</h2>
+                  <p className="text-slate-600">Predictive analytics for potential project risks</p>
+                </div>
+                <Select
+                  value={selectedDprId || ''}
+                  onValueChange={(value) => setSelectedDprId(value)}
+                >
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue placeholder="Select DPR" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {actualDPRs.map(dpr => (
+                      <SelectItem key={dpr.id} value={dpr.id}>
+                        {dpr.file_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedDprId && (
+                <>
+                  {/* Risk Prediction Visualization */}
+                  <Card className="shadow-lg border-0">
+                    <CardHeader className="bg-gradient-to-r from-[#004D99] to-[#003d7a] text-white rounded-t-lg">
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Risk Prediction Analysis
+                      </CardTitle>
+                      <CardDescription className="text-blue-100">
+                        AI-powered predictions based on historical data and project parameters
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Risk Probability Chart */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-slate-800">Risk Probability Distribution</h3>
+                          <ResponsiveContainer width="100%" height={300}>
+                            <BarChart
+                              data={generateRiskTypesData(actualDPRs)}
+                              margin={{
+                                top: 5,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                              }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="risk" />
+                              <YAxis domain={[0, 100]} />
+                              <Tooltip />
+                              <Legend />
+                              <Bar dataKey="score" name="Risk Score" fill="#004D99" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+
+                        {/* Risk Timeline Prediction */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-slate-800">Risk Timeline Projection</h3>
+                          <ResponsiveContainer width="100%" height={300}>
+                            <LineChart
+                              data={[
+                                { month: 'Jan', risk: 40 },
+                                { month: 'Feb', risk: 35 },
+                                { month: 'Mar', risk: 50 },
+                                { month: 'Apr', risk: 45 },
+                                { month: 'May', risk: 60 },
+                                { month: 'Jun', risk: 55 },
+                              ]}
+                              margin={{
+                                top: 5,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                              }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="month" />
+                              <YAxis domain={[0, 100]} />
+                              <Tooltip />
+                              <Legend />
+                              <Line
+                                type="monotone"
+                                dataKey="risk"
+                                name="Predicted Risk"
+                                stroke="#004D99"
+                                activeDot={{ r: 8 }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Risk Mitigation Strategies */}
+                  <Card className="shadow-lg border-0">
+                    <CardHeader className="bg-gradient-to-r from-[#E3B23C] to-[#d4a235]">
+                      <CardTitle className="text-[#004D99] flex items-center gap-2">
+                        <Shield className="h-5 w-5" />
+                        Recommended Mitigation Strategies
+                      </CardTitle>
+                      <CardDescription className="text-slate-700">
+                        AI-generated strategies to reduce identified risks
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {riskPredictionData.map(risk => (
+                          <Collapsible key={risk.id} className="border border-slate-200 rounded-lg">
+                            <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-slate-50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-[#E3B23C] rounded-lg">
+                                  <AlertTriangle className="h-4 w-4 text-[#004D99]" />
+                                </div>
+                                <div className="text-left">
+                                  <p className="font-medium text-slate-800">{risk.riskType}</p>
+                                  <p className="text-sm text-slate-500">{risk.section}</p>
+                                </div>
+                              </div>
+                              <ChevronDown className="h-4 w-4 text-slate-500" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="p-4 pt-0 border-t border-slate-200">
+                              <div className="space-y-3">
+                                <div>
+                                  <p className="text-sm text-slate-500 mb-1">Risk Severity</p>
+                                  <Progress value={risk.severity} className="h-2" />
+                                  <p className="text-right text-sm font-medium text-slate-700 mt-1">{risk.severity}%</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-slate-500 mb-1">AI Recommendation</p>
+                                  <p className="text-slate-700">{risk.recommendation}</p>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full border-[#004D99] text-[#004D99] hover:bg-blue-50"
+                                >
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  View Detailed Report
+                                </Button>
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Risk Comparison */}
+                  <Card className="shadow-lg border-0">
+                    <CardHeader className="bg-gradient-to-r from-[#004D99] to-[#003d7a] text-white rounded-t-lg">
+                      <CardTitle className="flex items-center gap-2">
+                        <Filter className="h-5 w-5" />
+                        Risk Comparison Across Projects
+                      </CardTitle>
+                      <CardDescription className="text-blue-100">
+                        Comparative analysis with similar projects
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Project</TableHead>
+                              <TableHead>Risk Category</TableHead>
+                              <TableHead>Current Score</TableHead>
+                              <TableHead>Benchmark</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell className="font-medium">
+                                {actualDPRs.find(dpr => dpr.id === selectedDprId)?.file_name || 'Selected Project'}
+                              </TableCell>
+                              <TableCell>Cost Overrun</TableCell>
+                              <TableCell>75%</TableCell>
+                              <TableCell>65%</TableCell>
+                              <TableCell>
+                                <Badge className="bg-amber-100 text-amber-700">Above Average</Badge>
+                              </TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">
+                                {actualDPRs.find(dpr => dpr.id === selectedDprId)?.file_name || 'Selected Project'}
+                              </TableCell>
+                              <TableCell>Schedule Delay</TableCell>
+                              <TableCell>60%</TableCell>
+                              <TableCell>55%</TableCell>
+                              <TableCell>
+                                <Badge className="bg-amber-100 text-amber-700">Above Average</Badge>
+                              </TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">
+                                {actualDPRs.find(dpr => dpr.id === selectedDprId)?.file_name || 'Selected Project'}
+                              </TableCell>
+                              <TableCell>Resource Shortage</TableCell>
+                              <TableCell>45%</TableCell>
+                              <TableCell>50%</TableCell>
+                              <TableCell>
+                                <Badge className="bg-green-100 text-green-700">Below Average</Badge>
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Chatbot Tab */}
+          {activeTab === 'chatbot' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* DPR Selection */}
+              <Card className="shadow-lg border-0">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Select DPR for Chat
+                  </CardTitle>
+                  <CardDescription className="text-slate-700">
+                    Choose a DPR to ask questions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <Select
+                    value={selectedDprId || ''}
+                    onValueChange={(value) => setSelectedDprId(value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select DPR to chat with" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {actualDPRs.map(dpr => (
+                        <SelectItem key={dpr.id} value={dpr.id}>
+                          {dpr.file_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+
+              {selectedDprId && (
+                <Card className="shadow-lg border-0 h-[600px] flex flex-col">
+                  <CardHeader className="bg-gradient-to-r from-[#004D99] to-[#003d7a] text-white rounded-t-lg">
+                    <CardTitle className="flex items-center gap-2">
+                      <Bot className="h-5 w-5" />
+                      AI Assistant
+                    </CardTitle>
+                    <CardDescription className="text-blue-100">
+                      Ask questions about the selected DPR
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 p-0">
+                    <ChatInterface
+                      dprId={selectedDprId}
+                      dprName={actualDPRs.find(d => d.id === selectedDprId)?.file_name || 'Selected DPR'}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default OrganizationDashboard;

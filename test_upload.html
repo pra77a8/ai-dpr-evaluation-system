@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test DPR Upload</title>
+</head>
+<body>
+    <h1>Test DPR Upload</h1>
+    <form action="http://localhost:8003/api/dpr/upload_with_ai" method="post" enctype="multipart/form-data">
+        <label for="file">Select DPR PDF:</label>
+        <input type="file" id="file" name="file" accept=".pdf"><br><br>
+        
+        <label for="uploaded_by">Uploaded By:</label>
+        <input type="text" id="uploaded_by" name="uploaded_by" value="test_user"><br><br>
+        
+        <label for="generate_reports">Generate Reports:</label>
+        <input type="checkbox" id="generate_reports" name="generate_reports" value="true" checked><br><br>
+        
+        <input type="submit" value="Upload DPR">
+    </form>
+    
+    <h2>Test Results</h2>
+    <div id="results"></div>
+    
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = '<p>Uploading...</p>';
+            
+            fetch('http://localhost:8003/api/dpr/upload_with_ai', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Upload failed with status ' + response.status);
+                }
+            })
+            .then(data => {
+                resultsDiv.innerHTML = '<p style="color: green;">Upload successful!</p>';
+                resultsDiv.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                resultsDiv.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

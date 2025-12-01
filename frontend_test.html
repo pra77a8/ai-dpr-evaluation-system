@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Test</title>
+</head>
+<body>
+    <h1>Test PDF Upload</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" accept=".pdf" required>
+        <button type="submit">Upload PDF</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                document.getElementById('result').innerHTML = '<p>Please select a file</p>';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('uploaded_by', 'test_user');
+            
+            try {
+                const response = await fetch('/api/dpr/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                } else {
+                    const error = await response.json();
+                    document.getElementById('result').innerHTML = '<p>Error: ' + (error.detail || 'Failed to process file') + '</p>';
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p>Error: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>

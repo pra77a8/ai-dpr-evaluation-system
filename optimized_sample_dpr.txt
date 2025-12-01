@@ -1,0 +1,86 @@
+DETAILED PROJECT REPORT (DPR)
+================================
+
+Project Title: Rural Road Development - Phase 2
+
+1. EXECUTIVE SUMMARY
+This project aims to improve connectivity in rural areas by constructing and upgrading road infrastructure. The project will enhance transportation facilities for local communities and support economic development in the region.
+
+2. BUDGET DETAILS
+Total Project Cost: ₹30,00,000
+Fund Allocation: Government Grant - ₹30,00,000
+Estimated Expenditure Breakdown:
+- Materials: ₹15,00,000
+- Labor: ₹10,00,000
+- Equipment: ₹3,00,000
+- Contingency: ₹2,00,000
+
+3. TIMELINE
+Project Duration: 18 months
+Commencement Date: January 2025
+Completion Target: June 2026
+Key Milestones:
+- Site Preparation: January - February 2025 (2 months)
+- Foundation Work: March - June 2025 (4 months)
+- Road Construction: July 2025 - February 2026 (8 months)
+- Finishing & Landscaping: March - May 2026 (3 months)
+- Final Inspection: June 2026 (1 month)
+
+4. RESOURCES & MANPOWER
+Human Resources:
+- Project Manager: 1
+- Civil Engineers: 4
+- Assistant Engineers: 4
+- Surveyors: 2
+- Skilled Laborers: 40
+- Unskilled Laborers: 35
+Equipment & Vehicles:
+- Excavators: 3
+- Bulldozers: 2
+- Trucks: 5
+- Water Tankers: 3
+- Compaction Equipment: 2
+
+5. LOCATION / REGION
+Project Area: Village Rampur to Highway NH-44
+District: East District
+State: Sample State
+Geographical Coordinates: N 25.4358°, E 85.2134°
+Terrain Type: Mixed terrain with hilly patches
+
+6. ENVIRONMENTAL CONCERNS
+Environmental Impact Assessment:
+- Minimal tree cutting required (less than 50 trees)
+- Flood-prone area during monsoon season (July-September)
+- Soil erosion prevention measures to be implemented
+- Drainage system designed to handle heavy rainfall
+- Wildlife corridor preservation in northern section
+Mitigation Measures:
+- Reforestation program post-completion
+- Silt traps installation
+- Controlled water discharge system
+- Regular environmental monitoring
+
+7. TECHNICAL SPECIFICATIONS
+Road Length: 12.5 kilometers
+Road Width: 7 meters (carriageway) + 2x1.5 meters (shoulder)
+Surface Material: Bituminous concrete
+Base Course: Crushed stone aggregates
+Drainage System: Culverts and side drains
+Safety Features: Guardrails, signage, and lighting
+Quality Standards: IRC:58-2011, IRC:37-2018
+
+8. RISK ASSESSMENT
+Identified Risks:
+- Cost Overrun Risk: Medium (60%)
+- Schedule Delay Risk: High (75%) - Due to monsoon
+- Resource Availability: Low (30%)
+- Environmental Compliance: Medium (50%)
+- Quality Assurance: Low (25%)
+
+9. APPROVALS AND AUTHORIZATIONS
+Prepared by: Civil Engineering Department
+Reviewed by: Technical Advisory Committee
+Approved by: District Collector
+Date of Approval: December 15, 2024
+Project ID: DPR-2025-RRD-002

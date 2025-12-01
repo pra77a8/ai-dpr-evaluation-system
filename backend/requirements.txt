@@ -1,0 +1,24 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic[email]==2.5.0
+pymongo==4.6.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+pdfplumber==0.10.2
+python-docx==0.8.11
+pytesseract==0.3.10
+spacy==3.7.2
+langchain==0.0.350
+openai==1.3.7
+xgboost==2.0.3
+scikit-learn==1.3.2
+numpy==1.26.2
+pandas==2.1.3
+matplotlib==3.8.2
+# Add seaborn since it's used in the report generator
+seaborn==0.13.0
+reportlab==4.0.4
+joblib==1.3.2
+# Add email-validator explicitly for Pydantic email validation
+email-validator==2.1.0

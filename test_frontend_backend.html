@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend-Backend Communication Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #004D99;
+            margin-bottom: 30px;
+        }
+        .button {
+            background-color: #004D99;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background-color: #003d7a;
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Frontend-Backend Communication Test</h1>
+            <p>Testing connection to the AI DPR Evaluation System backend</p>
+        </div>
+        
+        <div style="text-align: center;">
+            <button id="testConnection" class="button">Test Backend Connection</button>
+            <button id="testDashboard" class="button">Test Organization Dashboard</button>
+            <button id="testUpload" class="button">Test File Upload Endpoint</button>
+        </div>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('testConnection').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Testing connection...';
+            
+            try {
+                const response = await fetch('/api/dpr/organization/dashboard');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Connection successful!
+
+Status: ${response.status} ${response.statusText}
+DPRs found: ${data.length}
+
+First DPR: ${data[0] ? data[0].file_name : 'None'}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Connection failed!\n\nStatus: ${response.status} ${response.statusText}\nResponse: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Connection error!
+
+${error.message}
+
+Make sure the backend server is running on port 8005.`;
+            }
+        });
+        
+        document.getElementById('testDashboard').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Fetching organization dashboard data...';
+            
+            try {
+                const response = await fetch('/api/dpr/organization/dashboard');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Organization Dashboard Data</h3>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>Total DPRs:</strong> ${data.length}</p>
+                        <h4>DPR Details:</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Failed to fetch dashboard data!\n\nStatus: ${response.status} ${response.statusText}\nResponse: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error fetching dashboard data!
+
+${error.message}
+
+Make sure the backend server is running on port 8005.`;
+            }
+        });
+        
+        document.getElementById('testUpload').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Testing upload endpoint...';
+            
+            try {
+                const response = await fetch('/api/dpr/upload', {
+                    method: 'POST',
+                    body: new FormData() // Empty form data for testing
+                });
+                
+                // We expect this to fail since we're not sending a file, but we want to see if the endpoint is reachable
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h3>✅ Upload Endpoint Accessible</h3>
+                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    <p>The upload endpoint is reachable. Actual uploads require a valid file.</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                // If we get a network error, the endpoint is not accessible
+                if (error.name === 'TypeError') {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Upload endpoint not accessible!
+
+${error.message}
+
+Make sure the backend server is running on port 8005.`;
+                } else {
+                    // If we get a response, the endpoint is accessible
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Upload endpoint accessible!
+
+${error.message}
+
+The endpoint is reachable but requires a valid file for actual uploads.`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Connection Test</title>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <button id="testButton">Test API Connection</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testButton').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Replace with your actual backend URL
+                const response = await fetch('https://ai-dpr-backend-2.onrender.com/api/dpr/organization/dashboard');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `Success! Received ${data.length || 0} items from API`;
+                    console.log('Data:', data);
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `Error: ${response.status} - ${errorText}`;
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                resultDiv.innerHTML = `Network error: ${error.message || 'Failed to connect to server'}`;
+            }
+        });
+    </script>
+</body>
+</html>

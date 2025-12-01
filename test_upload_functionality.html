@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload Functionality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #004D99;
+            margin-bottom: 30px;
+        }
+        .button {
+            background-color: #004D99;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background-color: #003d7a;
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Test Upload Functionality</h1>
+            <p>Testing file upload to the AI DPR Evaluation System backend</p>
+        </div>
+        
+        <div style="text-align: center;">
+            <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg" />
+            <br><br>
+            <button id="uploadButton" class="button">Upload File</button>
+        </div>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Uploading file...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('uploaded_by', 'test_user');
+                
+                const response = await fetch('/api/dpr/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Upload Successful!</h3>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>Project Title:</strong> ${data.extracted_data?.project_title || 'N/A'}</p>
+                        <p><strong>File Name:</strong> ${data.file_name}</p>
+                        <p><strong>Upload Time:</strong> ${new Date(data.uploaded_at).toLocaleString()}</p>
+                        <h4>Full Response:</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Upload failed!\n\nStatus: ${response.status} ${response.statusText}\nResponse: ${errorText}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Upload error!
+
+${error.message}
+
+Make sure the backend server is running.`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connection Test</title>
+</head>
+<body>
+    <h1>Frontend-Backend Connection Test</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testConnection() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing connection...';
+            
+            try {
+                const response = await fetch('/api/dpr/organization/dashboard');
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h2>Success!</h2>
+                        <p>Connected to backend successfully.</p>
+                        <p>Number of DPRs: ${data.length}</p>
+                        <pre>${JSON.stringify(data[0], null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p>Error: ${response.status} ${response.statusText}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+Rural Road Development - Phase 2
+================================
+
+Project Details
+---------------
+Project Title: Rural Road Development - Phase 2
+Project Type: Infrastructure Development
+Department: Public Works Department
+
+Financial Information
+---------------------
+Budget: ₹25,00,000 (Twenty-Five Lakhs)
+Funding Source: State Government
+Contingency: ₹2,50,000 (Ten Percent)
+
+Project Timeline
+----------------
+Duration: 12 months
+Start Date: January 2025
+End Date: December 2025
+
+Resources & Manpower
+--------------------
+Laborers: 50
+Engineers: 5
+Vehicles: 10
+Total Staff: 65
+
+Location & Geography
+--------------------
+Starting Point: Village Rampur
+Ending Point: Highway NH-44
+District: East
+State: [State Name]
+Region Type: Rural
+
+Environmental Considerations
+----------------------------
+Tree Cutting: Minimal (less than 50 trees)
+Flood Risk: Area is flood-prone during monsoon season
+Mitigation Measures: Proper drainage systems
+
+Technical Specifications
+------------------------
+Road Length: 15 km
+Road Width: 7 meters
+Surface Type: Bituminous
+Drainage: Covered drains
+
+Implementation Plan
+-------------------
+Phase 1: Site preparation (2 months)
+Phase 2: Foundation work (4 months)
+Phase 3: Road construction (4 months)
+Phase 4: Finishing and quality checks (2 months)
